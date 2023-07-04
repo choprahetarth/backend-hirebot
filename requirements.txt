@@ -1,1 +1,6 @@
 Flask==2.2.2
+openai
+pypdf
+beautifulsoup4
+scholarly
+nltk
