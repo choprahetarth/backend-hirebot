@@ -3,10 +3,10 @@ import json
 import openai
 from bson import ObjectId
 from flask import jsonify
-from Modules.website_content_scrape import website_scrape
-from Modules.scrape_resume import scrape_resume
-from Modules.publications import Get_Published_Papers
-from Modules.db import Authenticate
+from api.website_content_scrape import website_scrape
+from api.scrape_resume import scrape_resume
+from api.publications import Get_Published_Papers
+from api.db import Authenticate
 from flask import Flask, render_template, request, redirect, url_for
 from flask_wtf import FlaskForm
 from wtforms import StringField, SubmitField, FileField, RadioField
