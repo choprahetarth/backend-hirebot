@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Home</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f8f9fa;
+            color: #343a40;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            text-align: center;
+        }
+        h1 {
+            font-size: 2.5em;
+            margin-bottom: 20px;
+        }
+        p {
+            font-size: 1.2em;
+        }
+        a {
+            color: #007bff;
+            text-decoration: none;
+        }
+        a:hover {
+            color: #0056b3;
+        }
+    </style>
+</head>
+<body>
+    <div>
+        <h1>Welcome to HireBot!</h1>
+
+        <form action="/pay" method="post">
+            <label for="email">Email:</label><br>
+            <input type="email" id="email" name="email" required><br>
+            <label for="amount">Amount:</label><br>
+            <input type="number" id="amount" name="amount" required><br>
+            <input type="submit" value="Pay">
+        </form>
+
+        <h2>Check Your Credits</h2>
+
+        <form action="/credits" method="get">
+            <label for="email">Email:</label><br>
+            <input type="email" id="email" name="email" required><br>
+            <input type="submit" value="Check Credits">
+        </form>
+
+
+        <p>To get started, please <a href="{{ url_for('get_email') }}">click here</a> to enter your email.</p>
+    </div>
+</body>
+</html>
