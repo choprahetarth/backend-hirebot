@@ -11,3 +11,4 @@ scholarly==1.7.11
 selenium==4.10.0
 WTForms==3.0.1
 instamojo_wrapper
+flask_cors

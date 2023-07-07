@@ -13,8 +13,10 @@ from wtforms import StringField, SubmitField, FileField, RadioField
 from wtforms.validators import DataRequired
 from flask_pymongo import PyMongo, MongoClient
 from instamojo_wrapper import Instamojo
+from flask_cors import CORS, cross_origin
 
 app = Flask(__name__)
+CORS(app, support_credentials=True)
 app.config[
     "MONGO_URI"] = "mongodb+srv://choprahetarth:45AJpXuKlK90Xc5s@cluster0.jcnnsrz.mongodb.net/hirebot.hirebot_user?retryWrites=true&w=majority"
 app.config['SECRET_KEY'] = 'your-secret-key'
