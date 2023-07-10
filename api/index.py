@@ -9,7 +9,7 @@ from api.publications import Get_Published_Papers
 from api.db import Authenticate
 from flask import Flask, render_template, request, redirect, url_for
 from flask_wtf import FlaskForm
-from wtforms import StringField, SubmitField, FileField, RadioField
+from wtforms import StringField, SubmitField, FileField, RadioField, IntegerField
 from wtforms.validators import DataRequired
 from flask_pymongo import PyMongo, MongoClient
 from instamojo_wrapper import Instamojo
@@ -20,7 +20,7 @@ CORS(app, support_credentials=True)
 app.config[
     "MONGO_URI"] = "mongodb+srv://choprahetarth:45AJpXuKlK90Xc5s@cluster0.jcnnsrz.mongodb.net/hirebot.hirebot_user?retryWrites=true&w=majority"
 app.config['SECRET_KEY'] = 'your-secret-key'
-openai.api_key = "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"
+openai.api_key = "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"
 mongo = PyMongo(app)
 
 ### 
@@ -29,7 +29,6 @@ authenticate_obj = Authenticate(
 
 ALLOWED_EXTENSIONS = set(["pdf"])
 app.config["UPLOAD_FOLDER"] = "upload"
-
 
 
 client = MongoClient('mongodb+srv://choprahetarth:45AJpXuKlK90Xc5s@cluster0.jcnnsrz.mongodb.net/?retryWrites=true&w=majority')  # replace with your MongoDB connection string
@@ -53,6 +52,10 @@ class OptionForm(FlaskForm):
     option = RadioField('Choose your path', choices=[('research', 'Research'), ('job', 'Job')])
     submit = SubmitField('Next')
 
+# class EarlyAccess(FlaskForm):
+#     option = StringField('Early Access Coupon Code', validators=[DataRequired()])
+#     submit = SubmitField('Next')
+
 
 class ResearchForm(FlaskForm):
     person_name = StringField('Name of Person', validators=[DataRequired()])
@@ -68,6 +71,7 @@ class JobForm(FlaskForm):
     gpt_option = RadioField('GPT Name', choices=[('gpt-4', 'GPT-4'), ('gpt-3.5-turbo', 'GPT-3.5-Turbo')])
     job_description = StringField('Job Description', validators=[DataRequired()])
     resume = FileField('Upload Resume', validators=[DataRequired()])
+    # temperature_setting = IntegerField('Temperature', validators.NumberRange(min=0, max=2))
     submit = SubmitField('Submit')
 
 
@@ -146,6 +150,7 @@ def job_info(email):
             "option": "job",
             "job_description": form.job_description.data,
             "resume": scrape_resume(file_in_memory)
+            # "temperature_setting" = form.temperature_setting.data,
         }
 
         linkedin_dm = generate_industry_linkedin_dm(data)
@@ -281,9 +286,12 @@ def generate_industry_linkedin_dm(data):
     # name_of_referrer = json.loads(request.form.get('name_of_referrer'))
 
     job_description = data["job_description"]
+    job_description = job_description[:1000] # HARD LIMIT 1 
     resume = data["resume"]
+    resume = resume[:1000] # HARD LIMIT 2
     name_of_referrer = data["person_name"]
-    gpt_name = data["gpt_option"]
+    gpt_name = data["gpt_option"] 
+    # temperature_setting = data["temperature_setting"]
 
     # get the response
     response = openai.ChatCompletion.create(
@@ -291,7 +299,7 @@ def generate_industry_linkedin_dm(data):
         messages=[
             {
                 "role": "system",
-                "content": f"Act as a Job Seeker requesting {name_of_referrer} a personalized referral for a job posting in the form of a LinkedIn DM. Make sure that the DM is precise and short, and emphasises how your resume is aligned with the job role.",
+                "content": f"Act as a Job Seeker requesting {name_of_referrer} a personalized referral for a job posting in the form of a LinkedIn DM. Make sure that the DM is precise and short, and emphasises how your resume is aligned with the job role, and keep length less than 250 words.",
             },
             {
                 "role": "user",
@@ -301,6 +309,7 @@ def generate_industry_linkedin_dm(data):
                            + job_description,
             },
         ],
+        # temperature: temperature_setting
     )
     resp = response["choices"][0]["message"]["content"]
     return resp
