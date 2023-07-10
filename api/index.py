@@ -162,7 +162,7 @@ def job_info(email):
             upsert=True
         )
 
-        return "Thanks for your submission!"
+        return jsonify(data["linkedin_dm"])
     return render_template('job.html', form=form)
 
 
