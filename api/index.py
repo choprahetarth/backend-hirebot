@@ -1,3 +1,4 @@
+import csv
 import os
 import json
 import openai
@@ -9,11 +10,12 @@ from api.publications import Get_Published_Papers
 from api.db import Authenticate
 from flask import Flask, render_template, request, redirect, url_for
 from flask_wtf import FlaskForm
-from wtforms import StringField, SubmitField, FileField, RadioField, IntegerField
-from wtforms.validators import DataRequired
+from wtforms import StringField, SubmitField, FileField, RadioField, IntegerField, validators
+from wtforms.validators import DataRequired, NumberRange
 from flask_pymongo import PyMongo, MongoClient
 from instamojo_wrapper import Instamojo
 from flask_cors import CORS, cross_origin
+
 
 app = Flask(__name__)
 CORS(app, support_credentials=True)
@@ -35,6 +37,7 @@ client = MongoClient('mongodb+srv://choprahetarth:45AJpXuKlK90Xc5s@cluster0.jcnn
 db = client['hirebot']  # replace with your database name
 users = db['users']
 payments = db["payments"]
+coupons = db["coupons"]
 
 API_KEY = '3ee066d067708f3bc08b68a14c9ad885'
 AUTH_TOKEN = 'd1ba2e5687a8cf53b028b9d15abcf694'
@@ -71,7 +74,7 @@ class JobForm(FlaskForm):
     gpt_option = RadioField('GPT Name', choices=[('gpt-4', 'GPT-4'), ('gpt-3.5-turbo', 'GPT-3.5-Turbo')])
     job_description = StringField('Job Description', validators=[DataRequired()])
     resume = FileField('Upload Resume', validators=[DataRequired()])
-    # temperature_setting = IntegerField('Temperature', validators.NumberRange(min=0, max=2))
+    temperature_setting = IntegerField('Temperature', validators=[NumberRange(min=0, max=2)])
     submit = SubmitField('Submit')
 
 
@@ -129,7 +132,8 @@ def research_info(email):
 
         mongo.db.users.update_one(
             {"email": email},
-            {"$push": {"submissions": data}},
+            {"$push": {"submissions": data},
+             "$inc": {"credits": -10}},  # Reduce credits by 10
             upsert=True
         )
 
@@ -149,8 +153,8 @@ def job_info(email):
             "gpt_option": form.gpt_option.data,
             "option": "job",
             "job_description": form.job_description.data,
-            "resume": scrape_resume(file_in_memory)
-            # "temperature_setting" = form.temperature_setting.data,
+            "resume": scrape_resume(file_in_memory),
+            "temperature_setting" : form.temperature_setting.data
         }
 
         linkedin_dm = generate_industry_linkedin_dm(data)
@@ -158,11 +162,14 @@ def job_info(email):
 
         mongo.db.users.update_one(
             {"email": email},
-            {"$push": {"submissions": data}},
+            {"$push": {"submissions": data},
+             "$inc": {"credits": -10}},  # Reduce credits by 10
             upsert=True
         )
 
         return jsonify(data["linkedin_dm"])
+
+
     return render_template('job.html', form=form)
 
 
@@ -235,6 +242,26 @@ def read_google_scholar(url):
     return publications
 
 
+@app.route("/remove_coupon/<code>", methods=["GET"])
+def delete_coupon_code(code):
+    # Find and remove the coupon code
+    result = coupons.delete_one({"Coupon": code})
+    if result.deleted_count == 1:
+        return "Coupon code removed successfully"
+    else:
+        return "Coupon code not found"
+
+@app.route("/validate_coupon/<code>", methods=["GET"])
+def check_coupon_code_exists(coupon_code):
+    # Check if the coupon code exists in the collection
+    count = coupons.count_documents({"Coupon": coupon_code})
+    if count > 0:
+        return True
+    else:
+        return False
+
+
+
 @app.route("/authenticate", methods=["POST"])
 def authenticate():
     event = json.loads(request.form.get('event'))
@@ -291,7 +318,7 @@ def generate_industry_linkedin_dm(data):
     resume = resume[:1000] # HARD LIMIT 2
     name_of_referrer = data["person_name"]
     gpt_name = data["gpt_option"] 
-    # temperature_setting = data["temperature_setting"]
+    temperature_setting = data["temperature_setting"]
 
     # get the response
     response = openai.ChatCompletion.create(
@@ -309,7 +336,7 @@ def generate_industry_linkedin_dm(data):
                            + job_description,
             },
         ],
-        # temperature: temperature_setting
+        temperature = temperature_setting
     )
     resp = response["choices"][0]["message"]["content"]
     return resp
@@ -391,6 +418,29 @@ def get_credits():
         return {'credits': user['credits']}
     else:
         return {'error': 'User not found'}, 404
+
+
+@app.route('/create_user', methods=['GET'])
+def create_user():
+    user_email = request.args.get('email')
+    coupon_code = request.args.get('coupon')
+
+    user = users.find_one({'email': user_email})
+
+    if not user:
+        user_id = users.insert_one({'email': user_email, 'credits': 0}).inserted_id
+    else:
+        user_id = user['_id']
+
+    if check_coupon_code_exists(coupon_code):
+        mongo.db.users.update_one(
+            {"email": user_email},
+            {"$inc": {"credits": 5}},  # Add credits by 5
+            upsert=True
+        )
+    delete_coupon_code(coupon_code)
+
+    return str(user_id)
 
 
 # if __name__ == "__main__":
