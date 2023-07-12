@@ -12,3 +12,4 @@ selenium==4.10.0
 WTForms==3.0.1
 instamojo_wrapper
 flask_cors
+flask_limiter
