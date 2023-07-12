@@ -95,7 +95,7 @@ def get_email():
         return redirect(url_for('get_option', email=email))
     return render_template('email.html', form=form)
 
-@limiter.limit("1/minute") # change this part
+# @limiter.limit("1/minute") # change this part
 @app.route('/', methods=['GET'])
 def home():
     return render_template('home.html')
