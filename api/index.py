@@ -443,5 +443,14 @@ def create_user():
     return str(user_id)
 
 
+@app.route('/get_generated_dms', methods=['GET'])
+def get_generated_dms():
+    user_email = request.args.get('email')
+    user = users.find_one({'email': user_email})
+    if not user:
+        return ""
+    return  user.get('submissions')
+
+
 # if __name__ == "__main__":
 #     app.run()
