@@ -15,6 +15,8 @@ from wtforms.validators import DataRequired, NumberRange
 from flask_pymongo import PyMongo, MongoClient
 from instamojo_wrapper import Instamojo
 from flask_cors import CORS, cross_origin
+from flask_limiter import Limiter
+from flask_limiter.util import get_remote_address
 
 
 app = Flask(__name__)
@@ -24,6 +26,13 @@ app.config[
 app.config['SECRET_KEY'] = 'your-secret-key'
 openai.api_key = "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"
 mongo = PyMongo(app)
+
+## implement rate limiting ##
+limiter = Limiter(
+    app,
+    key_func = get_remote_address,
+    default_limits=["30 per hour"]
+)
 
 ### 
 authenticate_obj = Authenticate(
@@ -86,7 +95,7 @@ def get_email():
         return redirect(url_for('get_option', email=email))
     return render_template('email.html', form=form)
 
-
+@limiter.limit("1/minute") # change this part
 @app.route('/', methods=['GET'])
 def home():
     return render_template('home.html')
