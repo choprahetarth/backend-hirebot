@@ -321,8 +321,7 @@ def generate_industry_linkedin_dm():
     job_description = str(request.form.get("job_description"))
     job_description = job_description[:1000] # HARD LIMIT 1 
     resume = request.files['resume']
-    resume = scrape_resume(resume)
-    resume = request.form.get("resume")
+    resume = str(scrape_resume(resume))
     resume = resume[:1000] # HARD LIMIT 2
     name_of_referrer = request.form.get("person_name")
     gpt_name = request.form.get("gpt_option")
