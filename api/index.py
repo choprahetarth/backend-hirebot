@@ -317,12 +317,13 @@ def generate_research_mail(data):
 @app.route("/generate_industry_linkedin_dm", methods=["POST"])
 def generate_industry_linkedin_dm():
     email = request.form.get("email")
-    job_description = request.form.get("job_description")
-    job_description = job_description[:1000] # HARD LIMIT 1 
-    resume = request.form['resume'].data
+    job_description = "sadnasihfc"
+    # job_description = request.form.get("job_description")
+    # job_description = job_description[:1000] # HARD LIMIT 1 
+    resume = request.file['resume'].data
     resume = scrape_resume(resume)
     # resume = request.form.get("resume")
-    resume = resume[:1000] # HARD LIMIT 2
+    # resume = resume[:1000] # HARD LIMIT 2
     name_of_referrer = request.form.get("person_name")
     gpt_name = request.form.get("gpt_option")
     temperature_setting = request.form.get("temperature_setting")
