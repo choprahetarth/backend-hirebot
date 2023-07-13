@@ -319,7 +319,7 @@ def generate_industry_linkedin_dm():
     email = request.form.get("email")
     job_description = request.form.get("job_description")
     job_description = job_description[:1000] # HARD LIMIT 1 
-    resume = form.resume.data
+    resume = request.form.resume.data
     resume = scrape_resume(resume)
     # resume = request.form.get("resume")
     resume = resume[:1000] # HARD LIMIT 2
