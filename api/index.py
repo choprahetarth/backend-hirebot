@@ -176,10 +176,10 @@ def job_info(email):
             upsert=True
         )
 
-        # return jsonify(data["linkedin_dm"])
+        return jsonify(data["linkedin_dm"])
 
-    # return render_template('job.html', form=form)
-    return linkedin_dm
+    return render_template('job.html', form=form)
+    # return linkedin_dm
 
 
 def allowed_file(filename):
