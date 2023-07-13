@@ -151,35 +151,35 @@ def research_info(email):
     return render_template('research.html', form=form)
 
 
-@app.route('/job/<email>', methods=['GET', 'POST'])
-def job_info(email):
-    form = JobForm()
-    if form.validate_on_submit():
-        file_in_memory = form.resume.data
-        data = {
-            "email": email,
-            "person_name": form.person_name.data,
-            "gpt_option": form.gpt_option.data,
-            "option": "job",
-            "job_description": form.job_description.data,
-            "resume": scrape_resume(file_in_memory),
-            "temperature_setting" : form.temperature_setting.data
-        }
+# @app.route('/job/<email>', methods=['GET', 'POST'])
+# def job_info(email):
+#     form = JobForm()
+#     if form.validate_on_submit():
+#         file_in_memory = form.resume.data
+#         data = {
+#             "email": email,
+#             "person_name": form.person_name.data,
+#             "gpt_option": form.gpt_option.data,
+#             "option": "job",
+#             "job_description": form.job_description.data,
+#             "resume": scrape_resume(file_in_memory),
+#             "temperature_setting" : form.temperature_setting.data
+#         }
 
-        linkedin_dm = generate_industry_linkedin_dm(data)
-        data["linkedin_dm"] = linkedin_dm
+#         linkedin_dm = generate_industry_linkedin_dm(data)
+#         data["linkedin_dm"] = linkedin_dm
 
-        mongo.db.users.update_one(
-            {"email": email},
-            {"$push": {"submissions": data},
-             "$inc": {"credits": -10}},  # Reduce credits by 10
-            upsert=True
-        )
+#         mongo.db.users.update_one(
+#             {"email": email},
+#             {"$push": {"submissions": data},
+#              "$inc": {"credits": -10}},  # Reduce credits by 10
+#             upsert=True
+#         )
 
-        return jsonify(data["linkedin_dm"])
+#         return jsonify(data["linkedin_dm"])
 
-    return render_template('job.html', form=form)
-    # return linkedin_dm
+#     return render_template('job.html', form=form)
+#     # return linkedin_dm
 
 
 def allowed_file(filename):
@@ -314,12 +314,14 @@ def generate_research_mail(data):
     return resp
 
 
-# @app.route("/generate_industry_linkedin_dm", methods=["POST"])
+@app.route("/generate_industry_linkedin_dm", methods=["POST"])
 def generate_industry_linkedin_dm():
     email = request.form.get("email")
     job_description = request.form.get("job_description")
     job_description = job_description[:1000] # HARD LIMIT 1 
-    resume = request.form.get("resume")
+    resume = form.resume.data
+    resume = scrape_resume(resume)
+    # resume = request.form.get("resume")
     resume = resume[:1000] # HARD LIMIT 2
     name_of_referrer = request.form.get("person_name")
     gpt_name = request.form.get("gpt_option")
@@ -345,13 +347,12 @@ def generate_industry_linkedin_dm():
     )
     resp = response["choices"][0]["message"]["content"]
 
-    # mongo.db.users.update_one(
-    #             {"email": email},
-    #             {"$push": {"submissions": response ,"data":request.form},
-    #              "$inc": {"credits": -10}},  # Reduce credits by 10
-    #             upsert=True
-    #         )
-
+    mongo.db.users.update_one(
+                {"email": email},
+                {"$push": {"submissions": response ,"data":request.form},
+                 "$inc": {"credits": -10}},  # Reduce credits by 10
+                upsert=True
+            )
     return resp
 
 
