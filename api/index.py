@@ -316,26 +316,26 @@ def generate_research_mail(data):
 
 @app.route("/generate_industry_linkedin_dm", methods=["POST"])
 def generate_industry_linkedin_dm():
-    # form = JobForm()
-    # if form.validate_on_submit():
-    #     file_in_memory = form.resume.data
-    #     data = {
-    #         "email": email,
-    #         "person_name": form.person_name.data,
-    #         "gpt_option": form.gpt_option.data,
-    #         "option": "job",
-    #         "job_description": form.job_description.data,
-    #         "resume": scrape_resume(file_in_memory),
-    #         "temperature_setting" : form.temperature_setting.data
-    #     }
-    email = request.form.get("email")
-    job_description = request.form.get("job_description")
+    form = JobForm()
+    if form.validate_on_submit():
+        file_in_memory = form.resume.data
+        data = {
+            "email": email,
+            "person_name": form.person_name.data,
+            "gpt_option": form.gpt_option.data,
+            "option": "job",
+            "job_description": form.job_description.data,
+            "resume": scrape_resume(file_in_memory),
+            "temperature_setting" : form.temperature_setting.data
+        }
+    email = data["email"]
+    job_description = data["job_description"]
     job_description = job_description[:1000] # HARD LIMIT 1 
-    resume = scrape_resume(request.form.get("resume"))
+    resume = data["resume"]
     resume = resume[:1000] # HARD LIMIT 2
-    name_of_referrer = request.form.get("person_name")
-    gpt_name = request.form.get("gpt_option")
-    temperature_setting = request.form.get("temperature_setting")
+    name_of_referrer = data["person_name"]
+    gpt_name = data["gpt_option"]
+    temperature_setting = data["temperature_setting"]
 
     # get the response
     response = openai.ChatCompletion.create(
