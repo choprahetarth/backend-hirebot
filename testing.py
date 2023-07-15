@@ -100,7 +100,7 @@ def get_option(email):
             return redirect(url_for('research_info', email=email))
         else:
             return redirect(url_for('job_info', email=email))
-    return render_template('option.html', form=form)
+    return render_template('api/option.html', form=form)
 
 
 @app.route('/research/<email>', methods=['GET', 'POST'])
@@ -138,7 +138,7 @@ def research_info(email):
 
         # save data to MongoDB
         return "Thanks for your submission!"
-    return render_template('research.html', form=form)
+    return render_template('api/research.html', form=form)
 
 
 # @app.route('/job/<email>', methods=['GET', 'POST'])
@@ -382,7 +382,7 @@ def handle_redirect(user_id):
         # Check if payment has already been processed
         existing_payment = payments.find_one({'_id': payment_id})
         if existing_payment:
-            return render_template('error.html', message="This payment has already been processed.")
+            return render_template('api/error.html', message="This payment has already been processed.")
 
         # Make a GET request to Instamojo API to fetch payment details
 
@@ -406,12 +406,12 @@ def handle_redirect(user_id):
                     {'_id': payment_id, 'user_id': ObjectId(user_id), 'amount': amount, 'credits': credits,
                      "buyer_email": response["payment"]["buyer_email"], "response": response["payment"]})
 
-            return render_template('success.html', amount=amount, credits=credits)
+            return render_template('api/success.html', amount=amount, credits=credits)
 
         else:
-            return render_template('failure.html')
+            return render_template('api/failure.html')
 
-    return render_template('failure.html')
+    return render_template('api/failure.html')
 
 
 @app.route('/credits', methods=['GET'])
@@ -456,5 +456,5 @@ def get_generated_dms():
     return  user.get('submissions')
 
 
-# if __name__ == "__main__":
-#     app.run()
+if __name__ == "__main__":
+    app.run()
