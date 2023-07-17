@@ -316,6 +316,16 @@ def generate_industry_linkedin_dm():
     gpt_name = request.form.get("gpt_option")
     temperature_setting = float(request.form.get("temperature_setting"))
 
+    data = {
+            "email": email,
+            "person_name": name_of_referrer,
+            "gpt_option": gpt_name,
+            "option": "job",
+            "job_description": job_description,
+            "resume": resume,
+            "temperature_setting" : temperature_setting
+        }
+
     # get the response
     response = openai.ChatCompletion.create(
         model=gpt_name,
@@ -335,14 +345,19 @@ def generate_industry_linkedin_dm():
         temperature = temperature_setting
     )
     resp = response["choices"][0]["message"]["content"]
-
     mongo.db.users.update_one(
-                {"email": email},
-                {"$push": {"submissions": response ,"data":request.form},
-                 "$inc": {"credits": -1}},  # Reduce credits by 10
-                upsert=True
-            )
+        {"email": email},
+        {"$push": {"submissions": data},
+            "$inc": {"credits": -1}},  # Reduce credits by 10
+        upsert=True)
+    # mongo.db.users.update_one(
+    #             {"email": email},
+    #             {"$push": {"submissions": response ,"data":request.form},
+    #              "$inc": {"credits": -1}},  # Reduce credits by 10
+    #             upsert=True
+    #         )
     return resp
+
 
 
 
