@@ -345,17 +345,13 @@ def generate_industry_linkedin_dm():
         temperature = temperature_setting
     )
     resp = response["choices"][0]["message"]["content"]
+    data["linkedin_dm"] = resp
     mongo.db.users.update_one(
         {"email": email},
         {"$push": {"submissions": data},
             "$inc": {"credits": -1}},  # Reduce credits by 10
         upsert=True)
-    # mongo.db.users.update_one(
-    #             {"email": email},
-    #             {"$push": {"submissions": response ,"data":request.form},
-    #              "$inc": {"credits": -1}},  # Reduce credits by 10
-    #             upsert=True
-    #         )
+
     return resp
 
 
