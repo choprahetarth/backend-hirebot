@@ -340,7 +340,7 @@ def generate_industry_linkedin_dm():
     mongo.db.users.update_one(
                 {"email": email},
                 {"$push": {"submissions": response ,"data":request.form},
-                 "$inc": {"credits": -10}},  # Reduce credits by 10
+                 "$inc": {"credits": -1}},  # Reduce credits by 10
                 upsert=True
             )
     return resp
