@@ -1,6 +1,9 @@
 import csv
 import os
 import json
+import string
+import random
+
 import openai
 from bson import ObjectId
 from flask import jsonify
@@ -10,11 +13,11 @@ from api.publications import Get_Published_Papers
 from api.db import Authenticate
 from flask import Flask, render_template, request, redirect, url_for
 from flask_wtf import FlaskForm
-from wtforms import StringField, SubmitField, FileField, RadioField, IntegerField, validators
+from wtforms import StringField, SubmitField, FileField, RadioField, IntegerField
 from wtforms.validators import DataRequired, NumberRange
 from flask_pymongo import PyMongo, MongoClient
 from instamojo_wrapper import Instamojo
-from flask_cors import CORS, cross_origin
+from flask_cors import CORS
 
 app = Flask(__name__)
 CORS(app, support_credentials=True)
@@ -303,6 +306,14 @@ def generate_research_mail(data):
     resp = response["choices"][0]["message"]["content"]
     return resp
 
+def generate_random_string(length):
+    characters = string.ascii_letters + string.digits
+    random_string = ''
+    for _ in range(length):
+        random_index = random.randint(0, len(characters) - 1)
+        random_string += characters[random_index]
+    return random_string
+
 
 @app.route("/generate_industry_linkedin_dm", methods=["POST"])
 def generate_industry_linkedin_dm():
@@ -345,6 +356,8 @@ def generate_industry_linkedin_dm():
         temperature = temperature_setting
     )
     resp = response["choices"][0]["message"]["content"]
+    message_id = generate_random_string(10)
+    data["message_id"] = message_id
     data["linkedin_dm"] = resp
     mongo.db.users.update_one(
         {"email": email},
@@ -353,6 +366,23 @@ def generate_industry_linkedin_dm():
         upsert=True)
 
     return resp
+
+
+@app.route('/update_message', methods=['POST'])
+def update_message():
+    user_email = request.form['email']
+    message_id = request.form['message_id']
+    message = request.form['message']
+    user = users.find_one({'email': user_email})
+
+    if not user:
+
+        return "FAILURE"
+    else:
+        users.update_one({"submissions.message_id": message_id},
+                              {"$set": {"submissions.$.linkedin_dm": message}})
+
+    return "SUCCESS"
 
 
 
