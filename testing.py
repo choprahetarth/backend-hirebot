@@ -307,7 +307,6 @@ def generate_research_mail(data):
 @app.route("/generate_industry_linkedin_dm", methods=["POST"])
 def generate_industry_linkedin_dm():
     email = request.form.get("email")
-    job_description = "sadnasihfc"
     job_description = str(request.form.get("job_description"))
     job_description = job_description[:1000] # HARD LIMIT 1 
     resume = request.files['resume']
@@ -315,7 +314,7 @@ def generate_industry_linkedin_dm():
     resume = resume[:1000] # HARD LIMIT 2
     name_of_referrer = request.form.get("person_name")
     gpt_name = request.form.get("gpt_option")
-    temperature_setting = int(request.form.get("temperature_setting"))
+    temperature_setting = float(request.form.get("temperature_setting"))
 
     # get the response
     response = openai.ChatCompletion.create(
