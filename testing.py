@@ -3,7 +3,7 @@ import os
 import json
 import string
 import random
-
+import time
 import openai
 from bson import ObjectId
 from flask import jsonify
@@ -336,14 +336,13 @@ def generate_industry_linkedin_dm():
             "resume": resume,
             "temperature_setting" : temperature_setting
         }
-
     # get the response
     response = openai.ChatCompletion.create(
         model=gpt_name,
         messages=[
             {
                 "role": "system",
-                "content": f"Act as a Job Seeker requesting {name_of_referrer} a personalized referral for a job posting in the form of a LinkedIn DM. Make sure that the DM is precise and short, and emphasises how your resume is aligned with the job role, and keep length less than 250 words.",
+                "content": f"Act as a Job Seeker requesting {name_of_referrer} a personalized referral for a job posting in the form of a LinkedIn DM. Make sure that the DM is precise and short, and emphasises how your resume is aligned with the job role, and keep length less than 150 words.",
             },
             {
                 "role": "user",
