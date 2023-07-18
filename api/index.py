@@ -343,7 +343,7 @@ def generate_industry_linkedin_dm():
         messages=[
             {
                 "role": "system",
-                "content": f"Act as a Job Seeker requesting {name_of_referrer} a personalized referral for a job posting in the form of a LinkedIn DM. Make sure that the DM is precise and short, and emphasises how your resume is aligned with the job role, and keep length less than 150 words.",
+                "content": f"Act as a Job Seeker requesting {name_of_referrer} a personalized referral for a job posting in the form of a LinkedIn DM. Make sure that the DM is precise and short, and emphasises how your resume is aligned with the job role, and keep length less than 250 words.",
             },
             {
                 "role": "user",
