@@ -342,7 +342,7 @@ def generate_industry_linkedin_dm():
         messages=[
             {
                 "role": "system",
-                "content": f"Act as a Job Seeker requesting {name_of_referrer} a personalized referral for a job posting in the form of a LinkedIn DM. Make sure that the DM is precise and short, and emphasises how your resume is aligned with the job role, and keep length less than 250 words. Make sure to address it to {name_of_referrer} from the company mentioned in the job description. ",
+                "content": f"Act as a Job Seeker requesting {name_of_referrer} a personalized referral for a job posting in the form of a LinkedIn DM. Make sure that the DM is precise and short, and emphasises how your resume is aligned with the job role, and keep length less than 250 words. Make sure to address it to {name_of_referrer} from the company mentioned in the job description, and it should end with Regards, and your name should be specified.",
             },
             {
                 "role": "user",
@@ -365,7 +365,7 @@ def generate_industry_linkedin_dm():
             },
             {
                 "role": "user",
-                "content": f"""From the linkedin message {resp}, provide a 5 word summary acting as a heading"""
+                "content": f"""From the linkedin message {resp}, provide a 5 word summary which provides the company name."""
             },
         ],
         temperature = 0
@@ -424,7 +424,7 @@ def pay():
 
     print(response)
     # redirecting to the payment page
-    return (response['payment_request']['longurl'])
+    return response['payment_request']['longurl']
 
 
 @app.route('/handle_redirect/<user_id>', methods=['GET'])
@@ -449,7 +449,7 @@ def handle_redirect(user_id):
         # Check if payment was successful
         if status.lower() == 'credit':
             # Multiply the amount by 10 to calculate the credits
-            credits = int(float(amount) * 10)
+            credits = int(float(amount) / 10)
             print(credits)
 
             # Fetch the user from the database and update their credits
@@ -457,11 +457,12 @@ def handle_redirect(user_id):
             if user:
                 users.update_one({'_id': ObjectId(user_id)}, {'$inc': {'credits': credits}})
                 # Add payment to the database
-                payments.insert_one(
+                payments.insert_one(    
                     {'_id': payment_id, 'user_id': ObjectId(user_id), 'amount': amount, 'credits': credits,
                      "buyer_email": response["payment"]["buyer_email"], "response": response["payment"]})
 
-            return render_template('success.html', amount=amount, credits=credits)
+            # return render_template('success.html', amount=amount, credits=credits)
+            return redirect("https://frontend-hirebot-zeta.vercel.app/dashboard", code=302)
 
         else:
             return render_template('failure.html')
