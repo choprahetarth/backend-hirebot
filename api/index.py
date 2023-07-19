@@ -3,7 +3,6 @@ import os
 import json
 import string
 import random
-
 import openai
 from bson import ObjectId
 from flask import jsonify
@@ -337,13 +336,13 @@ def generate_industry_linkedin_dm():
             "temperature_setting" : temperature_setting
         }
 
-    # get the response
+    ## first response
     response = openai.ChatCompletion.create(
         model=gpt_name,
         messages=[
             {
                 "role": "system",
-                "content": f"Act as a Job Seeker requesting {name_of_referrer} a personalized referral for a job posting in the form of a LinkedIn DM. Make sure that the DM is precise and short, and emphasises how your resume is aligned with the job role, and keep length less than 250 words.",
+                "content": f"Act as a Job Seeker requesting {name_of_referrer} a personalized referral for a job posting in the form of a LinkedIn DM. Make sure that the DM is precise and short, and emphasises how your resume is aligned with the job role, and keep length less than 250 words. Make sure to address it to {name_of_referrer} from the company mentioned in the job description. ",
             },
             {
                 "role": "user",
@@ -356,9 +355,26 @@ def generate_industry_linkedin_dm():
         temperature = temperature_setting
     )
     resp = response["choices"][0]["message"]["content"]
+    ## second response
+    heading_response = openai.ChatCompletion.create(
+        model=gpt_name,
+        messages=[
+            {
+                "role": "system",
+                "content": "Act as a helpful assistant",
+            },
+            {
+                "role": "user",
+                "content": f"""From the linkedin message {resp}, provide a 5 word summary acting as a heading"""
+            },
+        ],
+        temperature = 0
+    )
+    heading = heading_response["choices"][0]["message"]["content"]
     message_id = generate_random_string(10)
     data["message_id"] = message_id
     data["linkedin_dm"] = resp
+    data["heading"] = heading
     mongo.db.users.update_one(
         {"email": email},
         {"$push": {"submissions": data},
