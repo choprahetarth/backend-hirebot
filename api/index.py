@@ -424,7 +424,7 @@ def pay():
 
     print(response)
     # redirecting to the payment page
-    return redirect(response['payment_request']['longurl'])
+    return (response['payment_request']['longurl'])
 
 
 @app.route('/handle_redirect/<user_id>', methods=['GET'])
