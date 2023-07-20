@@ -532,7 +532,12 @@ def get_generated_dms():
     user = users.find_one({'email': user_email})
     if not user:
         return ""
-    return user.get('submissions')
+
+    if  user.get('submissions'):
+        return user.get('submissions')
+    else:
+        return {}
+
 
 # if __name__ == "__main__":
 #     app.run()
