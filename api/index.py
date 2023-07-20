@@ -33,8 +33,8 @@ authenticate_obj = Authenticate(
 ALLOWED_EXTENSIONS = set(["pdf"])
 app.config["UPLOAD_FOLDER"] = "upload"
 
-
-client = MongoClient('mongodb+srv://choprahetarth:45AJpXuKlK90Xc5s@cluster0.jcnnsrz.mongodb.net/?retryWrites=true&w=majority')  # replace with your MongoDB connection string
+client = MongoClient(
+    'mongodb+srv://choprahetarth:45AJpXuKlK90Xc5s@cluster0.jcnnsrz.mongodb.net/?retryWrites=true&w=majority')  # replace with your MongoDB connection string
 db = client['hirebot']  # replace with your database name
 users = db['users']
 payments = db["payments"]
@@ -46,7 +46,6 @@ AUTH_TOKEN = 'd1ba2e5687a8cf53b028b9d15abcf694'
 api = Instamojo(api_key=API_KEY, auth_token=AUTH_TOKEN, endpoint='https://www.instamojo.com/api/1.1/')
 
 
-
 class EmailForm(FlaskForm):
     email = StringField('Email', validators=[DataRequired()])
     submit = SubmitField('Submit')
@@ -55,6 +54,7 @@ class EmailForm(FlaskForm):
 class OptionForm(FlaskForm):
     option = RadioField('Choose your path', choices=[('research', 'Research'), ('job', 'Job')])
     submit = SubmitField('Next')
+
 
 # class EarlyAccess(FlaskForm):
 #     option = StringField('Early Access Coupon Code', validators=[DataRequired()])
@@ -86,6 +86,7 @@ def get_email():
         email = form.email.data
         return redirect(url_for('get_option', email=email))
     return render_template('email.html', form=form)
+
 
 # @limiter.limit("1/minute") # change this part
 @app.route('/', methods=['GET'])
@@ -252,6 +253,7 @@ def delete_coupon_code(code):
     else:
         return "Coupon code not found"
 
+
 @app.route("/validate_coupon/<code>", methods=["GET"])
 def check_coupon_code_exists(coupon_code):
     # Check if the coupon code exists in the collection
@@ -260,7 +262,6 @@ def check_coupon_code_exists(coupon_code):
         return True
     else:
         return False
-
 
 
 @app.route("/authenticate", methods=["POST"])
@@ -305,6 +306,7 @@ def generate_research_mail(data):
     resp = response["choices"][0]["message"]["content"]
     return resp
 
+
 def generate_random_string(length):
     characters = string.ascii_letters + string.digits
     random_string = ''
@@ -318,28 +320,34 @@ def generate_random_string(length):
 def generate_industry_linkedin_dm():
     email = request.form.get("email")
     job_description = str(request.form.get("job_description"))
-    job_description = job_description[:1000] # HARD LIMIT 1 
+    job_description = job_description[:1000]  # HARD LIMIT 1
     resume = request.files['resume']
     resume = str(scrape_resume(resume))
-    resume = resume[:1000] # HARD LIMIT 2
+    resume = resume[:1000]  # HARD LIMIT 2
     name_of_referrer = request.form.get("person_name")
     gpt_name = request.form.get("gpt_option")
     temperature_setting = float(request.form.get("temperature_setting"))
 
+    user = mongo.db.users.find_one(
+        {"email": email},
+    )
 
-
-
-
+    if user["credits"] <= 0:
+        response = {
+            "error": "No credits left , Please pay to get credits",
+            "error_code": "405"
+        }
+        return response
 
     data = {
-            "email": email,
-            "person_name": name_of_referrer,
-            "gpt_option": gpt_name,
-            "option": "job",
-            "job_description": job_description,
-            "resume": resume,
-            "temperature_setting" : temperature_setting
-        }
+        "email": email,
+        "person_name": name_of_referrer,
+        "gpt_option": gpt_name,
+        "option": "job",
+        "job_description": job_description,
+        "resume": resume,
+        "temperature_setting": temperature_setting
+    }
 
     ## first response
     response = openai.ChatCompletion.create(
@@ -358,7 +366,7 @@ def generate_industry_linkedin_dm():
                            + """ Pick out the name of the candidate from the resume and address the DM from their side.""",
             },
         ],
-        temperature = temperature_setting
+        temperature=temperature_setting
     )
     resp = response["choices"][0]["message"]["content"]
     ## second response
@@ -374,7 +382,7 @@ def generate_industry_linkedin_dm():
                 "content": f"""From the linkedin message {resp}, provide a 5 word summary which provides the company name."""
             },
         ],
-        temperature = 0
+        temperature=0
     )
     heading = heading_response["choices"][0]["message"]["content"]
     message_id = generate_random_string(10)
@@ -384,7 +392,7 @@ def generate_industry_linkedin_dm():
     mongo.db.users.update_one(
         {"email": email},
         {"$push": {"submissions": data},
-            "$inc": {"credits": -1}},  # Reduce credits by 1
+         "$inc": {"credits": -1}},  # Reduce credits by 1
         upsert=True)
 
     return resp
@@ -402,10 +410,9 @@ def update_message():
         return "FAILURE"
     else:
         users.update_one({"submissions.message_id": message_id},
-                              {"$set": {"submissions.$.linkedin_dm": message}})
+                         {"$set": {"submissions.$.linkedin_dm": message}})
 
     return "SUCCESS"
-
 
 
 @app.route('/pay', methods=['POST'])
@@ -463,7 +470,7 @@ def handle_redirect(user_id):
             if user:
                 users.update_one({'_id': ObjectId(user_id)}, {'$inc': {'credits': credits}})
                 # Add payment to the database
-                payments.insert_one(    
+                payments.insert_one(
                     {'_id': payment_id, 'user_id': ObjectId(user_id), 'amount': amount, 'credits': credits,
                      "buyer_email": response["payment"]["buyer_email"], "response": response["payment"]})
 
@@ -522,8 +529,7 @@ def get_generated_dms():
     user = users.find_one({'email': user_email})
     if not user:
         return ""
-    return  user.get('submissions')
-
+    return user.get('submissions')
 
 # if __name__ == "__main__":
 #     app.run()
