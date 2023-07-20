@@ -462,7 +462,10 @@ def handle_redirect(user_id):
         # Check if payment was successful
         if status.lower() == 'credit':
             # Multiply the amount by 10 to calculate the credits
-            credits = int(float(amount) / 10)
+            # credits = int(float(amount) / 10)
+            # add dynamic payments
+            # hardcoding 100 credits
+            credits = 100 
             print(credits)
 
             # Fetch the user from the database and update their credits
