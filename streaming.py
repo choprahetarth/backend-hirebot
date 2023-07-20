@@ -25,9 +25,9 @@ def stream():
 @app.route('/completion', methods=['GET', 'POST'])
 def completion_api():
     if request.method == "GET":
-        return Response(stream(), mimetype='text/event-stream')
+        return Response(stream(), mimetype='text/plain')
     else:
-        return Response(None, mimetype='text/event-stream')
+        return Response(None, mimetype='text/plain')
     
 if __name__ == '__main__':
     app.run(debug=True)

@@ -326,6 +326,11 @@ def generate_industry_linkedin_dm():
     gpt_name = request.form.get("gpt_option")
     temperature_setting = float(request.form.get("temperature_setting"))
 
+
+
+
+
+
     data = {
             "email": email,
             "person_name": name_of_referrer,
@@ -379,7 +384,7 @@ def generate_industry_linkedin_dm():
     mongo.db.users.update_one(
         {"email": email},
         {"$push": {"submissions": data},
-            "$inc": {"credits": -1}},  # Reduce credits by 10
+            "$inc": {"credits": -1}},  # Reduce credits by 1
         upsert=True)
 
     return resp
@@ -490,6 +495,13 @@ def create_user():
 
     if not user:
         user_id = users.insert_one({'email': user_email, 'credits': 0}).inserted_id
+
+        mongo.db.users.update_one(
+            {"email": user_email},
+            {"$inc": {"credits": 2}},  # Add 2 credits by default
+            upsert=True
+        )
+
     else:
         user_id = user['_id']
 
