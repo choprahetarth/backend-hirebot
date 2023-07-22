@@ -363,7 +363,7 @@ def generate_industry_linkedin_dm():
                            + resume
                            + """. And here is the job description- """
                            + job_description
-                           + """ Pick out the name of the candidate from the resume and address the DM from their side.""",
+                           + """. Finally, Pick out the name of the candidate from the resume and address the message from their side.""",
             },
         ],
         temperature=temperature_setting
