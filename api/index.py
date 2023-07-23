@@ -375,14 +375,14 @@ def generate_industry_linkedin_dm():
         messages=[
             {
                 "role": "system",
-                "content": "Act as a helpful assistant",
+                "content": "Act as a summarizer",
             },
             {
                 "role": "user",
-                "content": f"""From the linkedin message {resp}, provide a 5 word summary which provides the company name."""
+                "content": f"""From the linkedin message here -> {resp}, provide a 5 word summary. DO NOT WRITE MORE THAN FIVE WORDS."""
             },
         ],
-        temperature=0
+        temperature=0, max_tokens=20
     )
     heading = heading_response["choices"][0]["message"]["content"]
     message_id = generate_random_string(10)
