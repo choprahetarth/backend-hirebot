@@ -13,3 +13,4 @@ WTForms==3.0.1
 instamojo_wrapper
 flask_cors
 flask_limiter
+langchain
