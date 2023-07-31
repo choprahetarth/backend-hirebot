@@ -10,6 +10,7 @@ from api.website_content_scrape import website_scrape
 from api.scrape_resume import scrape_resume
 from api.publications import Get_Published_Papers
 from api.db import Authenticate
+from api.langchain_util import generate_message, resume_evaluate_score
 from flask import Flask, render_template, request, redirect, url_for
 from flask_wtf import FlaskForm
 from wtforms import StringField, SubmitField, FileField, RadioField, IntegerField
@@ -538,6 +539,32 @@ def get_generated_dms():
     else:
         return {}
 
+
+@app.route('/evaluate_resume', methods=['POST'])
+def evaluate_resume():
+    job_description = str(request.form.get("job_description"))
+    job_description = job_description[:1000]  # HARD LIMIT 1
+    resume = request.files['resume']
+    resume = str(scrape_resume(resume))
+    resume = resume[:1000]  # HARD LIMIT 2
+
+    try:
+        evaluation, score = resume_evaluate_score(resume,job_description)
+
+    except Exception as e:
+        error_message = f"An error occurred"
+        return error_message, 500
+
+    response = jsonify(
+        {
+            "evaluation": evaluation,
+            "score": score
+        }
+    )
+
+    response.status_code = 200
+
+    return response
 
 # if __name__ == "__main__":
 #     app.run()

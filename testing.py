@@ -3,7 +3,6 @@ import os
 import json
 import string
 import random
-import time
 import openai
 from bson import ObjectId
 from flask import jsonify
@@ -11,6 +10,7 @@ from api.website_content_scrape import website_scrape
 from api.scrape_resume import scrape_resume
 from api.publications import Get_Published_Papers
 from api.db import Authenticate
+from api.langchain_util import generate_message, resume_evaluate_score
 from flask import Flask, render_template, request, redirect, url_for
 from flask_wtf import FlaskForm
 from wtforms import StringField, SubmitField, FileField, RadioField, IntegerField
@@ -34,8 +34,8 @@ authenticate_obj = Authenticate(
 ALLOWED_EXTENSIONS = set(["pdf"])
 app.config["UPLOAD_FOLDER"] = "upload"
 
-
-client = MongoClient('mongodb+srv://choprahetarth:45AJpXuKlK90Xc5s@cluster0.jcnnsrz.mongodb.net/?retryWrites=true&w=majority')  # replace with your MongoDB connection string
+client = MongoClient(
+    'mongodb+srv://choprahetarth:45AJpXuKlK90Xc5s@cluster0.jcnnsrz.mongodb.net/?retryWrites=true&w=majority')  # replace with your MongoDB connection string
 db = client['hirebot']  # replace with your database name
 users = db['users']
 payments = db["payments"]
@@ -47,7 +47,6 @@ AUTH_TOKEN = 'd1ba2e5687a8cf53b028b9d15abcf694'
 api = Instamojo(api_key=API_KEY, auth_token=AUTH_TOKEN, endpoint='https://www.instamojo.com/api/1.1/')
 
 
-
 class EmailForm(FlaskForm):
     email = StringField('Email', validators=[DataRequired()])
     submit = SubmitField('Submit')
@@ -56,6 +55,7 @@ class EmailForm(FlaskForm):
 class OptionForm(FlaskForm):
     option = RadioField('Choose your path', choices=[('research', 'Research'), ('job', 'Job')])
     submit = SubmitField('Next')
+
 
 # class EarlyAccess(FlaskForm):
 #     option = StringField('Early Access Coupon Code', validators=[DataRequired()])
@@ -87,6 +87,7 @@ def get_email():
         email = form.email.data
         return redirect(url_for('get_option', email=email))
     return render_template('email.html', form=form)
+
 
 # @limiter.limit("1/minute") # change this part
 @app.route('/', methods=['GET'])
@@ -253,6 +254,7 @@ def delete_coupon_code(code):
     else:
         return "Coupon code not found"
 
+
 @app.route("/validate_coupon/<code>", methods=["GET"])
 def check_coupon_code_exists(coupon_code):
     # Check if the coupon code exists in the collection
@@ -261,7 +263,6 @@ def check_coupon_code_exists(coupon_code):
         return True
     else:
         return False
-
 
 
 @app.route("/authenticate", methods=["POST"])
@@ -306,6 +307,7 @@ def generate_research_mail(data):
     resp = response["choices"][0]["message"]["content"]
     return resp
 
+
 def generate_random_string(length):
     characters = string.ascii_letters + string.digits
     random_string = ''
@@ -319,49 +321,79 @@ def generate_random_string(length):
 def generate_industry_linkedin_dm():
     email = request.form.get("email")
     job_description = str(request.form.get("job_description"))
-    job_description = job_description[:1000] # HARD LIMIT 1 
+    job_description = job_description[:1000]  # HARD LIMIT 1
     resume = request.files['resume']
     resume = str(scrape_resume(resume))
-    resume = resume[:1000] # HARD LIMIT 2
+    resume = resume[:1000]  # HARD LIMIT 2
     name_of_referrer = request.form.get("person_name")
     gpt_name = request.form.get("gpt_option")
     temperature_setting = float(request.form.get("temperature_setting"))
 
-    data = {
-            "email": email,
-            "person_name": name_of_referrer,
-            "gpt_option": gpt_name,
-            "option": "job",
-            "job_description": job_description,
-            "resume": resume,
-            "temperature_setting" : temperature_setting
+    user = mongo.db.users.find_one(
+        {"email": email},
+    )
+
+    if user["credits"] <= 0:
+        response = {
+            "error": "No credits left , Please pay to get credits",
+            "error_code": "405"
         }
-    # get the response
+        return response
+
+    data = {
+        "email": email,
+        "person_name": name_of_referrer,
+        "gpt_option": gpt_name,
+        "option": "job",
+        "job_description": job_description,
+        "resume": resume,
+        "temperature_setting": temperature_setting
+    }
+
+    ## first response
     response = openai.ChatCompletion.create(
         model=gpt_name,
         messages=[
             {
                 "role": "system",
-                "content": f"Act as a Job Seeker requesting {name_of_referrer} a personalized referral for a job posting in the form of a LinkedIn DM. Make sure that the DM is precise and short, and emphasises how your resume is aligned with the job role, and keep length less than 150 words.",
+                "content": f"Act as a Job Seeker requesting {name_of_referrer} a personalized referral for a job posting in the form of a LinkedIn DM. Make sure that the DM is precise and short, and emphasises how your resume is aligned with the job role, and keep length less than 250 words. Make sure to address it to {name_of_referrer} from the company mentioned in the job description.",
             },
             {
                 "role": "user",
                 "content": """Here is the content of my resume - """
                            + resume
                            + """. And here is the job description- """
-                           + job_description,
+                           + job_description
+                           + """. Finally, Pick out the name of the candidate from the resume and address the message from their side.""",
             },
         ],
-        temperature = temperature_setting
+        temperature=temperature_setting
     )
     resp = response["choices"][0]["message"]["content"]
+    ## second response
+    heading_response = openai.ChatCompletion.create(
+        model=gpt_name,
+        messages=[
+            {
+                "role": "system",
+                "content": "Act as a summarizer",
+            },
+            {
+                "role": "user",
+                "content": f"""From the linkedin message here -> {resp}, provide a 5 word summary. DO NOT WRITE MORE THAN FIVE WORDS."""
+            },
+        ],
+        temperature=0, max_tokens=20
+    )
+    heading = heading_response["choices"][0]["message"]["content"]
     message_id = generate_random_string(10)
     data["message_id"] = message_id
     data["linkedin_dm"] = resp
+    data["heading"] = heading
     mongo.db.users.update_one(
         {"email": email},
         {"$push": {"submissions": data},
-            "$inc": {"credits": -1}},  # Reduce credits by 10
+         "$inc": {"credits": -1}},  # Reduce credits by 1
         upsert=True)
 
     return resp
@@ -379,10 +411,9 @@ def update_message():
         return "FAILURE"
     else:
         users.update_one({"submissions.message_id": message_id},
-                              {"$set": {"submissions.$.linkedin_dm": message}})
+                         {"$set": {"submissions.$.linkedin_dm": message}})
 
     return "SUCCESS"
-
 
 
 @app.route('/pay', methods=['POST'])
@@ -407,7 +438,7 @@ def pay():
 
     print(response)
     # redirecting to the payment page
-    return (response['payment_request']['longurl'])
+    return response['payment_request']['longurl']
 
 
 @app.route('/handle_redirect/<user_id>', methods=['GET'])
@@ -432,7 +463,10 @@ def handle_redirect(user_id):
         # Check if payment was successful
         if status.lower() == 'credit':
             # Multiply the amount by 10 to calculate the credits
-            credits = int(float(amount) * 10)
+            # credits = int(float(amount) / 10)
+            # add dynamic payments
+            # hardcoding 100 credits
+            credits = 100 
             print(credits)
 
             # Fetch the user from the database and update their credits
@@ -444,7 +478,8 @@ def handle_redirect(user_id):
                     {'_id': payment_id, 'user_id': ObjectId(user_id), 'amount': amount, 'credits': credits,
                      "buyer_email": response["payment"]["buyer_email"], "response": response["payment"]})
 
-            return render_template('success.html', amount=amount, credits=credits)
+            # return render_template('success.html', amount=amount, credits=credits)
+            return redirect("https://frontend-hirebot-zeta.vercel.app/dashboard", code=302)
 
         else:
             return render_template('failure.html')
@@ -471,6 +506,13 @@ def create_user():
 
     if not user:
         user_id = users.insert_one({'email': user_email, 'credits': 0}).inserted_id
+
+        mongo.db.users.update_one(
+            {"email": user_email},
+            {"$inc": {"credits": 2}},  # Add 2 credits by default
+            upsert=True
+        )
+
     else:
         user_id = user['_id']
 
@@ -491,8 +533,38 @@ def get_generated_dms():
     user = users.find_one({'email': user_email})
     if not user:
         return ""
-    return  user.get('submissions')
 
+    if  user.get('submissions'):
+        return user.get('submissions')
+    else:
+        return {}
+
+
+@app.route('/evaluate_resume', methods=['POST'])
+def evaluate_resume():
+    job_description = str(request.form.get("job_description"))
+    job_description = job_description[:1000]  # HARD LIMIT 1
+    resume = request.files['resume']
+    resume = str(scrape_resume(resume))
+    resume = resume[:1000]  # HARD LIMIT 2
+
+    try:
+        evaluation, score = resume_evaluate_score(resume,job_description)
+
+    except Exception as e:
+        error_message = f"An error occurred"
+        return error_message, 500
+
+    response = jsonify(
+        {
+            "evaluation": evaluation,
+            "score": score
+        }
+    )
+
+    response.status_code = 200
+
+    return response
 
 if __name__ == "__main__":
     app.run()
